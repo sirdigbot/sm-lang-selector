@@ -3,6 +3,8 @@ A plugin that allows players to select the language they want SourceMod to trans
 
 *Translations must be provided by plugins for this to have any effect on them.*  
 
+**Requires at least SourceMod 1.11.**
+
 ## Features
 - Configurable menu (modify `sourcemod/configs/langselect.cfg` and `cfg/sourcemod/plugin.langselect.cfg`).
 - Saves player language setting across sessions (can be turned off).
