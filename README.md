@@ -13,7 +13,7 @@ A plugin that allows players to select the language they want SourceMod to trans
 
 ## How to install
 See the releases tab for latest download.  
-Extract the .zip/.7z into `addons/sourcemod/`.  
+Extract the files (except for `LICENSE.txt`) from the .zip or .7z into `addons/sourcemod/`.  
 
 If upgrading, remember the auto-generated config file `cfg/sourcemod/plugin.langselect.cfg` may need to be deleted (but only if new ConVars are added).  
 
