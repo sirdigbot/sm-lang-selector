@@ -26,6 +26,12 @@
 //------------------------------------------------------------------------------
 public Action Command_Language(int client, int args)
 {
+    if (client == 0)
+    {
+        ReplyToCommand(client, "%s %t", CHAT_TAG, "Command is in-game only");
+        return Plugin_Handled;
+    }
+
     if (!g_HasLanguageLoaded[client])
     {
         ReplyToCommand(client, "%s %t", CHAT_TAG, "Client not yet loaded");
@@ -88,7 +94,7 @@ public Action Command_GetLanguage(int client, int args)
     if (target == -1)
         return Plugin_Handled;
 
-    if (!g_HasLanguageLoaded[target])
+    if (!g_HasLanguageLoaded[target] || !IsClientInGame(target))
     {
         ReplyToCommand(client, "%s %t", CHAT_TAG, "Target not yet loaded");
         return Plugin_Handled;
@@ -136,7 +142,7 @@ public Action Command_SetLanguage(int client, int args)
     if (target == -1)
         return Plugin_Handled;
 
-    if (!g_HasLanguageLoaded[target])
+    if (!g_HasLanguageLoaded[target] || !IsClientInGame(target))
     {
         ReplyToCommand(client, "%s %t", CHAT_TAG, "Target not yet loaded");
         return Plugin_Handled;
@@ -186,7 +192,7 @@ public Action Command_ResetLanguage(int client, int args)
     if (target == -1)
         return Plugin_Handled;
     
-    if (!g_HasLanguageLoaded[target])
+    if (!g_HasLanguageLoaded[target] || !IsClientInGame(target))
     {
         ReplyToCommand(client, "%s %t", CHAT_TAG, "Target not yet loaded");
         return Plugin_Handled;

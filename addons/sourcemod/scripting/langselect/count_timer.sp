@@ -21,6 +21,8 @@
 #pragma newdecls required
 
 
+static StringMap s_TimerErrored;
+
 // Function executed each loop of the count timer
 typedef CountTimer_Loop = function Action (int loopCount, any data);
 
@@ -28,6 +30,10 @@ typedef CountTimer_Loop = function Action (int loopCount, any data);
 typedef CountTimer_End = function void (any data, bool error, bool stoppedEarly);
 
 
+/**
+ * Create a repeating timer with a limited loop count.
+ * Must close with CloseCountTimer().
+ */
 stock Handle CreateCountTimer(
     float interval,
     int maxIterations,
@@ -53,9 +59,12 @@ stock Handle CreateCountTimer(
 
 Action _CountTimer_InternalLoop(Handle timer, DataPack pack)
 {
-    // TODO / BUG: This thing will loop forever if anything errors.
-    // I don't think theres a fix for that.
-    // Ree.
+    if (CheckTimerError(timer))
+        SetFailState("Count timer encountered an error during loop, causing an infinite loop. Plugin must stop to prevent error log spam.");
+
+    // If function ends without resetting this, an error must've occurred
+    // and the next iteration will SetFailState to prevent an infinite loop.
+    SetTimerError(timer);
 
     pack.Reset();
     int loopCount = pack.ReadCell(); //  Exception reported: Data pack operation is out of bounds.
@@ -98,8 +107,45 @@ Action _CountTimer_InternalLoop(Handle timer, DataPack pack)
         if (Call_Finish() != SP_ERROR_NONE)
             LogError("Failed to execute timer end function.");
 
+        ResetTimerError(timer);
         return Plugin_Stop;
     }
 
+    ResetTimerError(timer);
     return Plugin_Continue;
+}
+
+
+void CountTimer_Init()
+{
+    if (s_TimerErrored == null)
+        s_TimerErrored = new StringMap();
+}
+
+void CloseCountTimer(Handle &timer)
+{
+    Handle temp = timer;
+    delete timer;
+    ResetTimerError(temp); // Always ensure timer stops first
+}
+
+static bool CheckTimerError(Handle timer)
+{
+    char key[16];
+    FormatEx(key, sizeof(key), "%x", timer);
+    return s_TimerErrored.ContainsKey(key);
+}
+
+static void SetTimerError(Handle timer)
+{
+    char key[16];
+    FormatEx(key, sizeof(key), "%x", timer);
+    s_TimerErrored.SetValue(key, true);
+}
+
+static void ResetTimerError(Handle timer)
+{
+    char key[16];
+    FormatEx(key, sizeof(key), "%x", timer);
+    s_TimerErrored.Remove(key);
 }

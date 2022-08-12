@@ -66,7 +66,7 @@ void ShowPrompt(int client)
 {
     if (!DisplayPrompt(client))
     {
-        delete g_Timer_RetryPrompt[client];
+        CloseCountTimer(g_Timer_RetryPrompt[client]);
         g_Timer_RetryPrompt[client] = CreateCountTimer(
             2.0,
             MAX_PROMPT_ATTEMPTS,

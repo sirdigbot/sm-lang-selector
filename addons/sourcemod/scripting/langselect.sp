@@ -23,7 +23,11 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.0.0"
+#define PLUGIN_VERSION "1.0.1"
+
+#if SOURCEMOD_V_MAJOR == 1 && SOURCEMOD_V_MINOR < 11
+    #error "This plugin requires SourceMod 1.11 or higher. Some required features do not exist in older versions of SourceMod."
+#endif
 
 public Plugin myinfo =
 {
@@ -127,6 +131,8 @@ public void OnPluginStart()
     g_ConfigLanguages = new StringMap();
     g_Cookie_ClientLang = new Cookie("langselect_language", "Client's selected language.", CookieAccess_Protected);
 
+    CountTimer_Init();
+
     HookEvent("player_spawn", Event_PlayerSpawn);
 
     AutoExecConfig();
@@ -200,6 +206,10 @@ public void OnConfigsExecuted()
 
 void LateLoadClient(int client)
 {
+#if defined _DEBUG
+    PrintToServer("DEBUG: LateLoadClient fired");
+#endif
+
     // Simulate a normal player connection
     OnClientConnected(client);
 
@@ -213,6 +223,10 @@ void LateLoadClient(int client)
 
 public void OnClientConnected(int client)
 {
+#if defined _DEBUG
+    PrintToServer("DEBUG: OnClientConnected fired (query lang: %i)", EngineQueriesLangCvar(g_Engine));
+#endif
+
     g_HasLanguageLoaded[client] = false;
 
     // State_None by default because LoadPlayerLanguage will set it
@@ -232,6 +246,10 @@ public void OnClientConnected(int client)
 
 public void OnClientCookiesCached(int client)
 {
+#if defined _DEBUG
+    PrintToServer("DEBUG: OnClientCookiesCached fired");
+#endif
+
     if (IsFakeClient(client))
         return;
 
@@ -247,6 +265,10 @@ public void OnClientCookiesCached(int client)
 
 public void OnClientLanguageChanged(int client, int language)
 {
+#if defined _DEBUG
+    PrintToServer("DEBUG: OnClientLanguageChanged fired");
+#endif
+
     // Reject client if they are not being loaded in via async language query
     if (!g_IsLoadingLanguageAsync[client] || !EngineQueriesLangCvar(g_Engine))
         return;
@@ -268,7 +290,7 @@ public void OnClientLanguageChanged(int client, int language)
         // because OnClientCookiesCached is guaranteed to be called AFTER
         // client connects (meaning they can have their language set)
         // for non cvar-querying games.
-        delete g_Timer_RetryLoad[client];
+        CloseCountTimer(g_Timer_RetryLoad[client]);
 
         g_Timer_RetryLoad[client] = CreateCountTimer(
             5.0,
@@ -286,6 +308,10 @@ public void OnClientLanguageChanged(int client, int language)
 
 Action OnRetryAsyncLoad(int loopCount, any data)
 {
+#if defined _DEBUG
+    PrintToServer("DEBUG: OnRetryAsyncLoad fired");
+#endif
+
     int client = GetClientOfUserId(data);
     if (client == 0)
         return Plugin_Stop;
@@ -301,6 +327,10 @@ Action OnRetryAsyncLoad(int loopCount, any data)
 
 void OnFinishedAsyncLoad(any data, bool error, bool stoppedEarly)
 {
+#if defined _DEBUG
+    PrintToServer("DEBUG: OnFinishedAsyncLoad fired");
+#endif
+
     int client = GetClientOfUserId(data);
     if (client == 0)
         return; // g_Timer_RetryLoad deleted on disconnect
@@ -324,12 +354,18 @@ void OnFinishedAsyncLoad(any data, bool error, bool stoppedEarly)
 //------------------------------------------------------------------------------
 public void OnClientDisconnect(int client)
 {
-    delete g_Timer_RetryPrompt[client];
-    delete g_Timer_RetryLoad[client];
+#if defined _DEBUG
+    PrintToServer("DEBUG: OnClientDisconnect fired");
+#endif
+
+    CloseCountTimer(g_Timer_RetryPrompt[client]);
+    CloseCountTimer(g_Timer_RetryLoad[client]);
 
     // Save for every player even if their language didnt change
     // otherwise they will be seen as a new player.
-    if (IsClientConnected(client)
+    // But dont set if they haven't loaded in yet.
+    if (g_HasLanguageLoaded[client]
+        && IsClientConnected(client)
         && !IsFakeClient(client)
         && AreClientCookiesCached(client)
         && g_Cvar_Save.BoolValue)
