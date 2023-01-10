@@ -23,7 +23,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.0.1"
+#define PLUGIN_VERSION "1.0.2"
 
 #if SOURCEMOD_V_MAJOR == 1 && SOURCEMOD_V_MINOR < 11
     #error "This plugin requires SourceMod 1.11 or higher. Some required features do not exist in older versions of SourceMod."
@@ -568,7 +568,23 @@ stock void StrToLower(char[] str, int size)
 stock bool EngineQueriesLangCvar(EngineVersion engine)
 {
     // See PlayerManager::HandleConVarQuery
-    return engine == Engine_CSGO || engine == Engine_Blade;
+
+    switch (engine)
+    {
+        case Engine_CSGO, Engine_Blade:
+        {
+            return true;
+        }
+
+#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 12
+        case Engine_MVC:
+        {
+            return true;
+        }
+#endif
+    }
+
+    return false;
 }
 
 stock bool QueryErrored(Database db, DBResultSet results, const char[] error)
